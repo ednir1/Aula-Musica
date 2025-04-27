@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula de Música</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .form-container, .table-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            margin: 20px auto;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Aula de Música</h1>
+
+<div class="form-container">
+    <form id="form-aula">
+        <label for="data">Data do Dia</label>
+        <input type="date" id="data" name="data" required>
+
+        <label for="nome">Nome do Aluno</label>
+        <input type="text" id="nome" name="nome" required>
+
+        <label for="instrumento">Instrumento</label>
+        <input type="text" id="instrumento" name="instrumento" required>
+
+        <label for="licao">Lição do Instrumento</label>
+        <input type="text" id="licao" name="licao" required>
+
+        <label for="pagina">Página</label>
+        <input type="number" id="pagina" name="pagina" required>
+
+        <label for="instrutor">Instrutor</label>
+        <input type="text" id="instrutor" name="instrutor" required>
+
+        <label for="localidade">Localidade</label>
+        <input type="text" id="localidade" name="localidade" required>
+
+        <button type="button" onclick="salvarAula()">Salvar</button>
+    </form>
+</div>
+
+<div class="table-container">
+    <h2>Relatório de Aulas</h2>
+
+    <label for="filtro-data">Filtrar por Data</label>
+    <input type="date" id="filtro-data">
+
+    <button type="button" onclick="filtrarPorData()">Filtrar Relatório</button>
+    <button type="button" onclick="imprimirRelatorio()">Imprimir Relatório</button>
+    <button type="button" onclick="gerarPDF()">Gerar PDF</button>
+    <button type="button" onclick="limparTudo()">Limpar Tudo</button>
+
+    <table id="tabela-relatorio">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Nome do Aluno</th>
+                <th>Instrumento</th>
+                <th>Lição</th>
+                <th>Página</th>
+                <th>Instrutor</th>
+                <th>Localidade</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    function salvarAula() {
+        let aula = {
+            data: document.getElementById('data').value,
+            nome: document.getElementById('nome').value,
+            instrumento: document.getElementById('instrumento').value,
+            licao: document.getElementById('licao').value,
+            pagina: document.getElementById('pagina').value,
+            instrutor: document.getElementById('instrutor').value,
+            localidade: document.getElementById('localidade').value
+        };
+
+        let aulas = JSON.parse(localStorage.getItem('aulas')) || [];
+        aulas.push(aula);
+
+        localStorage.setItem('aulas', JSON.stringify(aulas));
+        document.getElementById('form-aula').reset();
+        carregarRelatorio();
+    }
+
+    function carregarRelatorio(filtrarData = null) {
+        let aulas = JSON.parse(localStorage.getItem('aulas')) || [];
+        let tabela = document.getElementById('tabela-relatorio').getElementsByTagName('tbody')[0];
+        tabela.innerHTML = '';
+
+        aulas.forEach(aula => {
+            if (!filtrarData || aula.data === filtrarData) {
+                let row = tabela.insertRow();
+                row.insertCell(0).textContent = aula.data;
+                row.insertCell(1).textContent = aula.nome;
+                row.insertCell(2).textContent = aula.instrumento;
+                row.insertCell(3).textContent = aula.licao;
+                row.insertCell(4).textContent = aula.pagina;
+                row.insertCell(5).textContent = aula.instrutor;
+                row.insertCell(6).textContent = aula.localidade;
+            }
+        });
+    }
+
+    function filtrarPorData() {
+        let dataFiltro = document.getElementById('filtro-data').value;
+        carregarRelatorio(dataFiltro);
+    }
+
+    function imprimirRelatorio() {
+        window.print();
+    }
+
+    function limparTudo() {
+        if (confirm("Tem certeza que deseja apagar todos os registros?")) {
+            localStorage.removeItem('aulas');
+            carregarRelatorio();
+        }
+    }
+
+    async function gerarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        let aulas = JSON.parse(localStorage.getItem('aulas')) || [];
+
+        let y = 10;
+        doc.setFontSize(12);
+        doc.text("Relatório de Aulas", 10, y);
+        y += 10;
+
+        aulas.forEach((aula, index) => {
+            if (y > 270) { // Nova página se necessário
+                doc.addPage();
+                y = 10;
+            }
+            doc.text(`${index + 1}. Data: ${aula.data} | Aluno: ${aula.nome} | Instrumento: ${aula.instrumento} | Lição: ${aula.licao} | Página: ${aula.pagina} | Instrutor: ${aula.instrutor} | Localidade: ${aula.localidade}`, 10, y);
+            y += 8;
+        });
+
+        doc.save('relatorio_aulas.pdf');
+    }
+
+    window.onload = carregarRelatorio;
+</script>
+
+</body>
+</html>
